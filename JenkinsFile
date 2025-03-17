@@ -1,0 +1,70 @@
+pipeline {
+  agent any
+  environment {
+    GIT_URL = 'https://github.com/YeshwanthYolar/springboot-jenkins.git'
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        sh 'echo passed'
+        git branch: 'main', url: GIT_URL
+      }
+    }
+    stage('Build and Test') {
+      steps {
+        sh 'ls -ltr'
+        sh 'mvn clean package'
+      }
+    }
+    stage('Static Code Analysis') {
+      environment {
+        SONAR_URL = "http://54.234.147.255:9000/"
+      }
+      steps {
+        withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]) {
+          sh 'mvn sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN -Dsonar.host.url=${SONAR_URL}'
+        }
+      }
+    }
+    stage('Build and Push Docker Image') {
+      environment {
+        DOCKER_IMAGE = "yeshwanth410/ultimate-cicd:${BUILD_NUMBER}"
+        REGISTRY_CREDENTIALS = credentials('docker-cred')
+      }
+      steps {
+        script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "docker build -t ${DOCKER_IMAGE} ."
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                        sh "docker push ${DOCKER_IMAGE}"
+                    }
+                }
+      }
+    }
+    stage('Update Deployment File') {
+      environment {
+        GIT_REPO_NAME = "springboot-jenkins"
+        GIT_USER_NAME = "YeshwanthYolar"
+      }
+      steps {
+        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+          sh '''
+            git config user.email "yolaryeshwanth@gmail.com"
+            git config user.name "YeshwanthYolar"
+            BUILD_NUMBER=${BUILD_NUMBER}
+            sed -i "s|image: yeshwanth410/ultimate-cicd:[^ ]*|image: yeshwanth410/ultimate-cicd:${BUILD_NUMBER}|g" spring-boot-app-manifests/deployment.yml
+            git add spring-boot-app-manifests/deployment.yml
+            git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+          '''
+        }
+      }
+    }
+    // stage('deploy to kubernetes') {
+    //   steps {
+    //     sh 'kubectl apply -f spring-boot-app-manifests/deployment.yml'
+    //     sh 'kubectl apply -f spring-boot-app-manifests/service.yml'
+    //   }
+    // }
+  }
+}
