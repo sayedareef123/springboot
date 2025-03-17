@@ -1,7 +1,7 @@
 pipeline {
   agent any
   environment {
-    GIT_URL = 'https://github.com/YeshwanthYolar/springboot-jenkins.git'
+    GIT_URL = 'https://github.com/sayedareef123/springboot.git'
   }
   stages {
     stage('Checkout') {
@@ -28,7 +28,7 @@ pipeline {
     }
     stage('Build and Push Docker Image') {
       environment {
-        DOCKER_IMAGE = "yeshwanth410/ultimate-cicd:${BUILD_NUMBER}"
+        DOCKER_IMAGE = "areef1/springboot-application:${BUILD_NUMBER}"
         REGISTRY_CREDENTIALS = credentials('docker-cred')
       }
       steps {
