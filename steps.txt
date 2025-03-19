@@ -1,0 +1,6 @@
+cloning the git repo (source code)
+buiding the source code using maven
+code quality check using sonarqube
+buiding image using dokcer
+push the image to dockerhub 
+updating yaml file and  pushing into github with the updated docker image tag.  
