@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: spring-boot-app
-        image: areef1/springboot-application:replace 
+        image: areef1/springboot-application:6 
         ports:
         - containerPort: 8081
